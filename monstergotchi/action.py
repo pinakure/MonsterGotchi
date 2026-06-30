@@ -25,7 +25,7 @@ class Action:
         self.type   = action
         self.parent = parent
         self.sprites_db = {}  # Guarda las poses (direcciones) de esta acción específica
-        parent.monster.load_and_process_sprites( f"{ parent.monster.name }-{ Action.NAME[action] }.png", self )
+        parent.monster.load_and_process_sprites( f"monstergotchi/gfx/{ parent.monster.name }-{ Action.NAME[action] }.png", self )
 
 class ActionSet:
 
