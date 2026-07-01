@@ -20,3 +20,8 @@ Little taskbar companion. Feed it or lose it.
     ```
     NOTE: ON some unix systems you have to use --break-system-packages, or use a Virtual Environment (virtualenv) to be able to install the dependencies. 
     
+3. Install Dependencies
+    ```bash
+    cd MonsterGotchi
+    python main.py
+    ```
