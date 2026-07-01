@@ -11,7 +11,7 @@ Little taskbar companion. Feed it or lose it.
 ## Install / Deploy Instructions
  1. Clone Repository
     ```bash
-    git clone git@github.com:pinakure/MonsterGotchi.git
+    git clone https://github.com/pinakure/MonsterGotchi.git
     ```
  2. Install Dependencies
     ```bash
