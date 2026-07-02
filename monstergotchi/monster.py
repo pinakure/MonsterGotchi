@@ -13,29 +13,34 @@ ROW_MAPPING     = {
     "noroeste"  : 4
 }
 
-RANDOM_MONSTER  = ['gible', 'gabite', 'garchomp'][int(random.random()*3)]
 SPRITE_SIZES    = {
+    'gastly'    : 32,
+    'gengar'    : 32,
     'gible'     : 24,
     'gabite'    : 32,
     'garchomp'  : 40,
 }
 
 class MonsterStats:
-    def __init__(self, speed=None, strenght=None, defense=None, special=None, evasion=None, vitality=None, xp=None):
+    def __init__(self, sex=None, speed=None, strenght=None, defense=None, special=None, evasion=None, vitality=None, xp=None):
+        self.sex      = random.randint(-1, 1) if not sex else sex
         self.vitality = random.randint(12,25) if not vitality else vitality
-        self.speed    = random.randint(4,10) if not speed else speed
-        self.evasion  = random.randint(4,10) if not evasion else evasion
-        self.strength = random.randint(4,10) if not strenght else strenght
-        self.defense  = random.randint(4,10) if not defense else defense
-        self.special  = random.randint(4,10) if not special else special
+        self.speed    = random.randint( 4,10) if not speed else speed
+        self.evasion  = random.randint( 4,10) if not evasion else evasion
+        self.strength = random.randint( 4,10) if not strenght else strenght
+        self.defense  = random.randint( 4,10) if not defense else defense
+        self.special  = random.randint( 4,10) if not special else special
         self.xp       = 0 if not xp else xp
+        self.xp_next  = self.xp+1000 
+        self.level    = 1
 
 class Monster:
-    def __init__(self, app, name=None, random=False):
-        if not name and not random: raise Exception('You must specify either a valid name or random=True')
+    def __init__(self, app, name=None, randomize=False):
+        if not name and not randomize: raise Exception('You must specify either a valid name or random=True')
+        RANDOM_MONSTER  = [x for x,y in SPRITE_SIZES.items()][random.randint(0, len(SPRITE_SIZES.items())-1)]
         self.stats          = MonsterStats()
         self.app            = app
-        self.name           = RANDOM_MONSTER if random else name
+        self.name           = RANDOM_MONSTER if randomize else name
         self.size           = Position( SPRITE_SIZES[ self.name ],SPRITE_SIZES[ self.name ] ) 
         self.render_size    = self.size.getScaled( Gui.SCALE_FACTOR )
         self.sprite_size    = self.render_size.copy()
@@ -46,28 +51,19 @@ class Monster:
         self.current_frame  = 0
         self.update()
 
-    def load_and_process_sprites(self, file_path, accion_obj):
+    def load_and_process_sprites(self, file_path, accion_obj,action=0):
         img = Image.open(file_path).convert("RGBA")
-        
         for pose, row in ROW_MAPPING.items():
             accion_obj.sprites_db[pose] = []
             for frame in range(3):
                 # Recortar frame
-                left = frame * self.size.x
+                offset = (action*3)*self.size.x
+                left = offset + (frame * self.size.x)
                 top = row * self.size.y
-                box = (left, top, left + self.size.x, top + self.size.y)
-                frame_img = img.crop(box)
-                
-                # Filtrar tu máscara fucsia exacta (255, 0, 255) a transparencia total
-                datas = frame_img.getdata()
-                new_data = []
-                for item in datas:
-                    if item[0] == 255 and item[1] == 0 and item[2] == 255:
-                        new_data.append((0, 0, 0, 0))  # Transparente real
-                    else:
-                        new_data.append(item)
-                frame_img.putdata(new_data)
-                
+                frame_img = img.crop( (left, top, left + self.size.x, top + self.size.y) ) #tomar recorte de caja 
+        
+                frame_img = self.app.gui.filter_pink(frame_img)     # Filtrar tu máscara fucsia exacta (255, 0, 255) a transparencia total
+            
                 # Convertir la imagen de Pillow a un QPixmap de PyQt compatible
                 qpixmap = self.app.gui.pillow_to_qpixmap(frame_img, self.render_size.x, self.render_size.y)
                 accion_obj.sprites_db[pose].append(qpixmap)
@@ -77,7 +73,7 @@ class Monster:
             if pose in ["oeste", "suroeste", "noroeste"]:
                 target_pose = "este" if pose == "oeste" else ("sudeste" if pose == "suroeste" else "nordeste")
                 accion_obj.sprites_db[target_pose] = []
-                for f_img in [img.crop((f*self.size.x, row*self.size.y, f*self.size.x+self.size.x, row*self.size.y+self.size.y)) for f in range(3)]:
+                for f_img in [img.crop((f*self.size.x, row*self.size.y, f*self.size.x+self.size.x, row*self.size.y+self.size.y)) for f in range((action*3), (action*3)+3)]:
                     mirror_img = f_img.transpose(Image.FLIP_LEFT_RIGHT)
                     # Filtrar fucsia también en el espejo
                     m_datas = mirror_img.getdata()
@@ -105,19 +101,27 @@ class Monster:
         if r > 90:
             self.action = self.actions.walk
 
+    def earn_experience(self, amount):
+        self.stats.xp += amount
+        if self.stats.xp > self.stats.xp_next:
+            self.stats.xp -= self.stats.xp_next
+            self.stats.level+=1
+
     def walk(self):
-        speed = self.stats.speed * 0.5 * Gui.SCALE_FACTOR
+        speed = self.stats.speed * 0.125 * Gui.SCALE_FACTOR
         self.position.x += Direction.DELTA[ self.direction ].x * speed
         if self.position.x > self.app.gui.screen_size.x - (self.render_size.x >> 1 ):
             self.direction = Direction.OESTE
         if self.position.x < (self.render_size.x >> 1 ):
             self.direction = Direction.ESTE
-        
+        self.earn_experience(1)
+
     def update_animation(self):
         self.randomizeAction()
         if self.action.type == Action.IDLE: self.randomizeDirection()
         elif self.action.type == Action.WALK: self.walk()
-        self.current_frame = (self.current_frame+1)%4
+        # self.current_frame = (self.current_frame+1)%4
+        self.current_frame = (self.current_frame+.2+(self.stats.speed*0.01)) if self.current_frame <= 3.4 else 0.4
         self.update()
         
     def update(self):

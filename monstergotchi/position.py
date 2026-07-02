@@ -9,3 +9,7 @@ class Position:
     def copy(self):
         return Position( self.x, self.y )
         
+    def set(self, x, y):
+        self.x = x
+        self.y = y
+        
