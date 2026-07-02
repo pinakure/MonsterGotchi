@@ -11,11 +11,17 @@ Little taskbar companion. Feed it or lose it.
 ## Install / Deploy Instructions
  1. Clone Repository
     ```bash
-    git clone git@github.com:pinakure/ADAM-Entity.git /src/adam
+    git clone https://github.com/pinakure/MonsterGotchi.git
     ```
  2. Install Dependencies
     ```bash
     pip install Pillow
     pip install PyQt5
     ```
+    NOTE: ON some unix systems you have to use --break-system-packages, or use a Virtual Environment (virtualenv) to be able to install the dependencies. 
     
+3. Run script
+    ```bash
+    cd MonsterGotchi
+    python main.py
+    ```
